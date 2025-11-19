@@ -43,7 +43,44 @@ bool AABB::intersect(const Ray &ray, Float *t_in, Float *t_out) const {
   //    for getting the inverse direction of the ray.
   // @see Min/Max/ReduceMin/ReduceMax
   //    for vector min/max operations.
-  UNIMPLEMENTED;
+  Float inv_dir_x = 1.0f / ray.direction.x;
+    Float inv_dir_y = 1.0f / ray.direction.y;
+    Float inv_dir_z = 1.0f / ray.direction.z;
+
+    Float t0_x = (low_bnd.x - ray.origin.x) * inv_dir_x;
+    Float t0_y = (low_bnd.y - ray.origin.y) * inv_dir_y;
+    Float t0_z = (low_bnd.z - ray.origin.z) * inv_dir_z;
+    
+    Float t1_x = (upper_bnd.x - ray.origin.x) * inv_dir_x;
+    Float t1_y = (upper_bnd.y - ray.origin.y) * inv_dir_y;
+    Float t1_z = (upper_bnd.z - ray.origin.z) * inv_dir_z;
+
+    if (t0_x > t1_x) {
+        Float temp = t0_x;
+        t0_x = t1_x;
+        t1_x = temp;
+    }
+    if (t0_y > t1_y) {
+        Float temp = t0_y;
+        t0_y = t1_y;
+        t1_y = temp;
+    }
+    if (t0_z > t1_z) {
+        Float temp = t0_z;
+        t0_z = t1_z;
+        t1_z = temp;
+    }
+
+    *t_in = t0_x;
+    if (t0_y > *t_in) *t_in = t0_y;
+    if (t0_z > *t_in) *t_in = t0_z;
+
+    *t_out = t1_x;
+    if (t1_y < *t_out) *t_out = t1_y;
+    if (t1_z < *t_out) *t_out = t1_z;
+
+    return (*t_in <= *t_out) && (*t_out >= ray.t_min) && (*t_in <= ray.t_max);
+  // UNIMPLEMENTED;
 }
 
 /* ===================================================================== *
@@ -92,10 +129,41 @@ bool TriangleIntersect(Ray &ray, const uint32_t &triangle_index,
   // You can use @see Cross and @see Dot for determinant calculations.
 
   // Delete the following lines after you implement the function
-  InternalScalarType u = InternalScalarType(0);
-  InternalScalarType v = InternalScalarType(0);
-  InternalScalarType t = InternalScalarType(0);
-  UNIMPLEMENTED;
+  InternalVecType edge1 = v1 - v0;
+  InternalVecType edge2 = v2 - v0;
+  InternalVecType h = Cross(dir, edge2);
+  InternalScalarType a = Dot(edge1, h);
+
+  const InternalScalarType eps = 1e-8;
+  if (a > -eps && a < eps) {
+    return false;
+  }
+
+  InternalScalarType f = 1.0 / a;
+  InternalVecType s = ray.origin - v0;
+  InternalScalarType u = f * Dot(s, h);
+
+  if (u < 0.0 || u > 1.0) {
+    return false;
+  }
+
+  InternalVecType q = Cross(s, edge1);
+  InternalScalarType v = f * Dot(dir, q);
+
+  if (v < 0.0 || u + v > 1.0) {
+    return false;
+  }
+
+  InternalScalarType t = f * Dot(edge2, q);
+
+  if (t < ray.t_min || t > ray.t_max) {
+    return false;
+  }
+
+  // InternalScalarType u = InternalScalarType(0);
+  // InternalScalarType v = InternalScalarType(0);
+  // InternalScalarType t = InternalScalarType(0);
+  // UNIMPLEMENTED;
 
   // We will reach here if there is an intersection
 

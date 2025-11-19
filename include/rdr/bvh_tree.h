@@ -143,7 +143,9 @@ typename BVHTree<_>::IndexType BVHTree<_>::build(
   // @see span_left: The left index of the current span
   // @see span_right: The right index of the current span
   //
-  /* if ( */ UNIMPLEMENTED; /* ) */
+  // /* if ( */ UNIMPLEMENTED; /* ) */
+  IndexType prim_count = span_right - span_left;
+  if (prim_count <= 2 || depth >= CUTOFF_DEPTH)
   {
     // create leaf node
     const auto &node = nodes[span_left];
@@ -180,8 +182,23 @@ use_median_heuristic:
     // [span_left, split) are less than those in [split, span_right)
     //
     // You may find `std::nth_element` useful here.
+    std::nth_element(
+        nodes.begin() + span_left,
+        nodes.begin() + split,
+        nodes.begin() + span_right,
+        [&dim](const NodeType &a, const NodeType &b) {
+            Vec3f centroid_a = (a.getAABB().low_bnd + a.getAABB().upper_bnd) * 0.5f;
+            Vec3f centroid_b = (b.getAABB().low_bnd + b.getAABB().upper_bnd) * 0.5f;
+            return centroid_a[dim] < centroid_b[dim];
+        }
+    );
 
-    UNIMPLEMENTED;
+    if (split <= span_left || split >= span_right) {
+        split = span_left + 1;
+        if (split >= span_right) split = span_right - 1;
+    }
+
+    // UNIMPLEMENTED;
 
     // clang-format on
   } else if (hprofile == EHeuristicProfile::ESurfaceAreaHeuristic) {
